@@ -1,4 +1,38 @@
+import sys
+import inspect
+
+def get_user_model():
+    # Recorre los módulos que comienzan con 'app.models.'
+    for module_name, module in sys.modules.items():
+        if module_name.startswith('app.models.'):
+            # Busca una clase llamada "User" en el módulo
+            for name, obj in inspect.getmembers(module, inspect.isclass):
+                # Asegurarse de que la clase esté definida en este módulo
+                if name == "User" and obj.__module__ == module_name:
+                    return obj
+    raise Exception("No se encontró el modelo User")
+
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    User = get_user_model()
+    return User.query.get(int(user_id))
+
+
+
+
+
 from flask import Flask, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+import os, importlib
+import sys
+import inspect
+
+# Instancias globales de las extensiones
+db = SQLAlchemy()
+login_manager = LoginManager()
 
 def create_app():
     app = Flask(__name__)
@@ -9,8 +43,7 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'login.login'
 
-    # Registro automático de blueprints (como se mostró anteriormente)
-    import os, importlib
+    # Registro automático de blueprints
     modules_dir = os.path.join(os.path.dirname(__file__), 'modules')
     for module_name in os.listdir(modules_dir):
         module_path = os.path.join(modules_dir, module_name)
@@ -26,7 +59,7 @@ def create_app():
             except Exception as e:
                 print(f"Error al registrar el blueprint del módulo '{module_name}': {e}")
 
-    # Registrar modelos automáticamente
+    # Registro automático de modelos
     models_dir = os.path.join(os.path.dirname(__file__), 'models')
     for filename in os.listdir(models_dir):
         if filename.endswith('.py') and filename != '__init__.py':
@@ -46,3 +79,18 @@ def create_app():
         db.create_all()
 
     return app
+
+def get_user_model():
+    # Recorre los módulos cargados que comienzan con 'app.models.'
+    for module_name, module in sys.modules.items():
+        if module_name.startswith('app.models.'):
+            # Busca una clase llamada "User" en el módulo
+            for name, obj in inspect.getmembers(module, inspect.isclass):
+                if name == "User" and obj.__module__ == module_name:
+                    return obj
+    raise Exception("No se encontró el modelo User")
+
+@login_manager.user_loader
+def load_user(user_id):
+    User = get_user_model()
+    return User.query.get(int(user_id))
