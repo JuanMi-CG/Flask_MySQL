@@ -1,16 +1,25 @@
+
 from flask import Flask, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
+# from flask_login import LoginManager
+import os, importlib
+import sys
+import inspect
+
+# Instancias globales de las extensiones
+db = SQLAlchemy()
+# login_manager = LoginManager()
 
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'tu_secret_key_aqui'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://remoto:Remoto123!@db/ERP'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://remoto:Remoto123!@db/ERP'
     
     db.init_app(app)
-    login_manager.init_app(app)
-    login_manager.login_view = 'login.login'
+    # login_manager.init_app(app)
+    # login_manager.login_view = 'login.login'
 
-    # Registro automático de blueprints (como se mostró anteriormente)
-    import os, importlib
+    # Registro automático de blueprints
     modules_dir = os.path.join(os.path.dirname(__file__), 'modules')
     for module_name in os.listdir(modules_dir):
         module_path = os.path.join(modules_dir, module_name)
@@ -26,7 +35,7 @@ def create_app():
             except Exception as e:
                 print(f"Error al registrar el blueprint del módulo '{module_name}': {e}")
 
-    # Registrar modelos automáticamente
+    # Registro automático de modelos
     models_dir = os.path.join(os.path.dirname(__file__), 'models')
     for filename in os.listdir(models_dir):
         if filename.endswith('.py') and filename != '__init__.py':

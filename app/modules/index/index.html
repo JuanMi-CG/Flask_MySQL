@@ -6,5 +6,85 @@
 <div class="container mt-4">
     <h1>Página Index</h1>
     <p>Contenido de la página index.</p>
+    
+    <hr>
+    <h2>Gestión de Usuarios</h2>
+
+    {# Mostrar mensajes flash si existen #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {# Formulario para editar o crear usuario según corresponda #}
+    {% if usuario_editar %}
+      <h3>Editar Usuario</h3>
+      <form action="{{ url_for('index.usuarios_edit', id=usuario_editar.id) }}" method="post">
+          <div class="mb-3">
+              <label for="nombre" class="form-label">Nombre</label>
+              <input type="text" name="nombre" class="form-control" id="nombre" value="{{ usuario_editar.nombre }}" required>
+          </div>
+          <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input type="email" name="email" class="form-control" id="email" value="{{ usuario_editar.email }}" required>
+          </div>
+          <div class="mb-3">
+              <label for="contraseña" class="form-label">Nueva Contraseña (dejar en blanco para mantener la actual)</label>
+              <input type="password" name="contraseña" class="form-control" id="contraseña">
+          </div>
+          <button type="submit" class="btn btn-primary">Actualizar Usuario</button>
+          <a href="{{ url_for('index.usuarios') }}" class="btn btn-secondary">Cancelar</a>
+      </form>
+    {% else %}
+      <h3>Crear Usuario</h3>
+      <form action="{{ url_for('index.usuarios_create') }}" method="post">
+          <div class="mb-3">
+              <label for="nombre" class="form-label">Nombre</label>
+              <input type="text" name="nombre" class="form-control" id="nombre" required>
+          </div>
+          <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input type="email" name="email" class="form-control" id="email" required>
+          </div>
+          <div class="mb-3">
+              <label for="contraseña" class="form-label">Contraseña</label>
+              <input type="password" name="contraseña" class="form-control" id="contraseña" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Crear Usuario</button>
+      </form>
+    {% endif %}
+
+    <hr>
+    <h3>Lista de Usuarios</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Fecha Creación</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for usuario in usuarios %}
+            <tr>
+                <td>{{ usuario.id }}</td>
+                <td>{{ usuario.nombre }}</td>
+                <td>{{ usuario.email }}</td>
+                <td>{{ usuario.fecha_creacion.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <a href="{{ url_for('index.usuarios_edit', id=usuario.id) }}" class="btn btn-sm btn-warning">Editar</a>
+                    <form action="{{ url_for('index.usuarios_delete', id=usuario.id) }}" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar usuario?');">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}
