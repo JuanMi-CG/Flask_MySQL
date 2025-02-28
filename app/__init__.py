@@ -17,7 +17,8 @@ def create_app():
     
     @app.route('/')
     def raiz():
-        return 'hola'
+        return redirect('/index/')
+
 
     
     return app
