@@ -6,6 +6,7 @@ def create_app():
     # Registrar blueprints
     from app.modules.index import index_bp
     from app.modules.home import home_bp
+
     app.register_blueprint(index_bp)
     app.register_blueprint(home_bp)
     
@@ -13,5 +14,10 @@ def create_app():
     @app.errorhandler(404)
     def page_not_found(error):
         return redirect(url_for('home.home'))
+    
+    @app.route('/')
+    def raiz():
+        return 'hola'
+
     
     return app
