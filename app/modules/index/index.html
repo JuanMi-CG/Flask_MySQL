@@ -1,90 +1,157 @@
-{% extends "base.html" %}
-
-{% block title %}Index - Mi Proyecto{% endblock %}
-
-{% block content %}
-<div class="container mt-4">
-    <h1>Página Index</h1>
-    <p>Contenido de la página index.</p>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestión de Usuarios</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div id="app" class="container mt-4">
+    <h1>Gestión de Usuarios</h1>
     
-    <hr>
-    <h2>Gestión de Usuarios</h2>
-
-    {# Mostrar mensajes flash si existen #}
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    {# Formulario para editar o crear usuario según corresponda #}
-    {% if usuario_editar %}
-      <h3>Editar Usuario</h3>
-      <form action="{{ url_for('index.usuarios_edit', id=usuario_editar.id) }}" method="post">
-          <div class="mb-3">
-              <label for="nombre" class="form-label">Nombre</label>
-              <input type="text" name="nombre" class="form-control" id="nombre" value="{{ usuario_editar.nombre }}" required>
-          </div>
-          <div class="mb-3">
-              <label for="email" class="form-label">Email</label>
-              <input type="email" name="email" class="form-control" id="email" value="{{ usuario_editar.email }}" required>
-          </div>
-          <div class="mb-3">
-              <label for="contraseña" class="form-label">Nueva Contraseña (dejar en blanco para mantener la actual)</label>
-              <input type="password" name="contraseña" class="form-control" id="contraseña">
-          </div>
-          <button type="submit" class="btn btn-primary">Actualizar Usuario</button>
-          <a href="{{ url_for('index.usuarios') }}" class="btn btn-secondary">Cancelar</a>
+    <!-- Mensajes de información -->
+    <div v-if="message" class="alert alert-info">{{ message }}</div>
+    
+    <!-- Formulario para crear/editar usuario -->
+    <div>
+      <h3>{{ editMode ? 'Editar Usuario' : 'Crear Usuario' }}</h3>
+      <form @submit.prevent="submitForm">
+        <div class="mb-3">
+          <label for="nombre" class="form-label">Nombre</label>
+          <input type="text" class="form-control" id="nombre" v-model="form.nombre" required>
+        </div>
+        <div class="mb-3">
+          <label for="email" class="form-label">Email</label>
+          <input type="email" class="form-control" id="email" v-model="form.email" required>
+        </div>
+        <div class="mb-3">
+          <label for="contraseña" class="form-label">Contraseña</label>
+          <input type="password" class="form-control" id="contraseña" v-model="form.contraseña" :required="!editMode">
+        </div>
+        <button type="submit" class="btn btn-primary">{{ editMode ? 'Actualizar' : 'Crear' }}</button>
+        <button type="button" class="btn btn-secondary" @click="resetForm" v-if="editMode">Cancelar</button>
       </form>
-    {% else %}
-      <h3>Crear Usuario</h3>
-      <form action="{{ url_for('index.usuarios_create') }}" method="post">
-          <div class="mb-3">
-              <label for="nombre" class="form-label">Nombre</label>
-              <input type="text" name="nombre" class="form-control" id="nombre" required>
-          </div>
-          <div class="mb-3">
-              <label for="email" class="form-label">Email</label>
-              <input type="email" name="email" class="form-control" id="email" required>
-          </div>
-          <div class="mb-3">
-              <label for="contraseña" class="form-label">Contraseña</label>
-              <input type="password" name="contraseña" class="form-control" id="contraseña" required>
-          </div>
-          <button type="submit" class="btn btn-primary">Crear Usuario</button>
-      </form>
-    {% endif %}
+    </div>
 
     <hr>
+    
+    <!-- Tabla de usuarios -->
     <h3>Lista de Usuarios</h3>
     <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Email</th>
-                <th>Fecha Creación</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for usuario in usuarios %}
-            <tr>
-                <td>{{ usuario.id }}</td>
-                <td>{{ usuario.nombre }}</td>
-                <td>{{ usuario.email }}</td>
-                <td>{{ usuario.fecha_creacion.strftime('%Y-%m-%d') }}</td>
-                <td>
-                    <a href="{{ url_for('index.usuarios_edit', id=usuario.id) }}" class="btn btn-sm btn-warning">Editar</a>
-                    <form action="{{ url_for('index.usuarios_delete', id=usuario.id) }}" method="post" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar usuario?');">Eliminar</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Fecha de Creación</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="usuario in usuarios" :key="usuario.id">
+          <td>{{ usuario.id }}</td>
+          <td>{{ usuario.nombre }}</td>
+          <td>{{ usuario.email }}</td>
+          <td>{{ usuario.fecha_creacion }}</td>
+          <td>
+            <button class="btn btn-warning btn-sm" @click="editUsuario(usuario)">Editar</button>
+            <button class="btn btn-danger btn-sm" @click="deleteUsuario(usuario.id)">Eliminar</button>
+          </td>
+        </tr>
+      </tbody>
     </table>
-</div>
-{% endblock %}
+  </div>
+
+  <!-- Cargar Vue 3, Axios y Bootstrap JS -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const { createApp } = Vue;
+    createApp({
+      data() {
+        return {
+          usuarios: [],
+          form: {
+            id: null,
+            nombre: '',
+            email: '',
+            contraseña: ''
+          },
+          editMode: false,
+          message: ''
+        }
+      },
+      methods: {
+        // Obtiene la lista de usuarios desde el endpoint API
+        getUsuarios() {
+          axios.get('/index/api/usuarios')
+            .then(response => {
+              this.usuarios = response.data.usuarios;
+            })
+            .catch(error => {
+              console.error(error);
+            });
+        },
+        // Envía el formulario para crear o actualizar un usuario
+        submitForm() {
+          if (this.editMode) {
+            // Actualizar usuario
+            axios.put('/index/api/usuarios/' + this.form.id, this.form)
+              .then(response => {
+                this.message = response.data.message;
+                this.getUsuarios();
+                this.resetForm();
+              })
+              .catch(error => {
+                console.error(error);
+              });
+          } else {
+            // Crear usuario
+            axios.post('/index/api/usuarios', this.form)
+              .then(response => {
+                this.message = response.data.message;
+                this.getUsuarios();
+                this.resetForm();
+              })
+              .catch(error => {
+                console.error(error);
+              });
+          }
+        },
+        // Prepara el formulario para editar un usuario
+        editUsuario(usuario) {
+          this.editMode = true;
+          this.form = {
+            id: usuario.id,
+            nombre: usuario.nombre,
+            email: usuario.email,
+            contraseña: ''
+          };
+        },
+        // Reinicia el formulario
+        resetForm() {
+          this.editMode = false;
+          this.form = { id: null, nombre: '', email: '', contraseña: '' };
+        },
+        // Elimina un usuario
+        deleteUsuario(id) {
+          if (confirm('¿Eliminar usuario?')) {
+            axios.delete('/index/api/usuarios/' + id)
+              .then(response => {
+                this.message = response.data.message;
+                this.getUsuarios();
+              })
+              .catch(error => {
+                console.error(error);
+              });
+          }
+        }
+      },
+      mounted() {
+        this.getUsuarios();
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

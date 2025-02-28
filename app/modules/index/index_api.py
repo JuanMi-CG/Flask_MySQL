@@ -1,53 +1,61 @@
-from flask import render_template, request, redirect, url_for, flash
+from flask import request, jsonify, render_template, send_file, current_app
+import os
 from app import db
 from app.models.usuarios import Usuario
 from . import index_bp
 from werkzeug.security import generate_password_hash
 
-# Redirige la ruta raíz a la gestión de usuarios
+# Sirve la aplicación SPA (frontend estático)
 @index_bp.route('/')
 def index():
-    return redirect(url_for('index.usuarios'))
+    return send_file(os.path.join(os.path.dirname(__file__), 'index.html'))
 
-# Muestra la lista de usuarios y el formulario (de creación o edición)
-@index_bp.route('/usuarios', methods=['GET'])
-def usuarios():
+
+# API: Obtener la lista de usuarios
+@index_bp.route('/api/usuarios', methods=['GET'])
+def api_get_usuarios():
     usuarios = Usuario.query.all()
-    return render_template('index.html', usuarios=usuarios)
+    usuarios_data = []
+    for u in usuarios:
+        usuarios_data.append({
+            'id': u.id,
+            'nombre': u.nombre,
+            'email': u.email,
+            'fecha_creacion': u.fecha_creacion.strftime('%Y-%m-%d %H:%M:%S')
+        })
+    return jsonify({'usuarios': usuarios_data})
 
-# Crea un nuevo usuario
-@index_bp.route('/usuarios/create', methods=['POST'])
-def usuarios_create():
-    nombre = request.form['nombre']
-    email = request.form['email']
-    contraseña = request.form['contraseña']
+# API: Crear un usuario
+@index_bp.route('/api/usuarios', methods=['POST'])
+def api_create_usuario():
+    data = request.json
+    nombre = data.get('nombre')
+    email = data.get('email')
+    contraseña = data.get('contraseña')
+    if not all([nombre, email, contraseña]):
+        return jsonify({'message': 'Datos incompletos'}), 400
     nuevo_usuario = Usuario(nombre, email, contraseña)
     db.session.add(nuevo_usuario)
     db.session.commit()
-    flash('Usuario creado correctamente', 'success')
-    return redirect(url_for('index.usuarios'))
+    return jsonify({'message': 'Usuario creado correctamente'})
 
-# Edita un usuario existente
-@index_bp.route('/usuarios/edit/<int:id>', methods=['GET', 'POST'])
-def usuarios_edit(id):
+# API: Actualizar un usuario
+@index_bp.route('/api/usuarios/<int:id>', methods=['PUT'])
+def api_update_usuario(id):
     usuario = Usuario.query.get_or_404(id)
-    if request.method == 'POST':
-        usuario.nombre = request.form['nombre']
-        usuario.email = request.form['email']
-        new_password = request.form.get('contraseña')
-        if new_password:
-            usuario.contraseña_hash = generate_password_hash(new_password)
-        db.session.commit()
-        flash('Usuario actualizado correctamente', 'success')
-        return redirect(url_for('index.usuarios'))
-    # En el GET se pasa el usuario a editar junto con la lista completa para mostrar el CRUD
-    return render_template('index.html', usuario_editar=usuario, usuarios=Usuario.query.all())
+    data = request.json
+    usuario.nombre = data.get('nombre', usuario.nombre)
+    usuario.email = data.get('email', usuario.email)
+    new_password = data.get('contraseña')
+    if new_password:
+        usuario.contraseña_hash = generate_password_hash(new_password)
+    db.session.commit()
+    return jsonify({'message': 'Usuario actualizado correctamente'})
 
-# Elimina un usuario
-@index_bp.route('/usuarios/delete/<int:id>', methods=['POST'])
-def usuarios_delete(id):
+# API: Eliminar un usuario
+@index_bp.route('/api/usuarios/<int:id>', methods=['DELETE'])
+def api_delete_usuario(id):
     usuario = Usuario.query.get_or_404(id)
     db.session.delete(usuario)
     db.session.commit()
-    flash('Usuario eliminado correctamente', 'success')
-    return redirect(url_for('index.usuarios'))
+    return jsonify({'message': 'Usuario eliminado correctamente'})

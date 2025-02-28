@@ -47,9 +47,9 @@ def create_app():
     def raiz():
         return redirect('/index/')
 
-    @app.errorhandler(404)
-    def page_not_found(error):
-        return redirect(url_for('home.home'))
+    # @app.errorhandler(404)
+    # def page_not_found(error):
+    #     return redirect(url_for('home.home'))
 
     with app.app_context():
         db.create_all()
