@@ -1,15 +1,17 @@
-from flask import Flask
+from flask import Flask, redirect, url_for
 
 def create_app():
     app = Flask(__name__)
     
-    # Cargar configuraciones, si es necesario
-    # app.config.from_object('config.Config')
-    
-    # Registrar blueprints de cada módulo
+    # Registrar blueprints
     from app.modules.index import index_bp
     from app.modules.home import home_bp
     app.register_blueprint(index_bp)
     app.register_blueprint(home_bp)
+    
+    # Manejador de error 404: redirige a la ruta home
+    @app.errorhandler(404)
+    def page_not_found(error):
+        return redirect(url_for('home.home'))
     
     return app

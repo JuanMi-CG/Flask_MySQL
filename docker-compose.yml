@@ -4,11 +4,14 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: flask_app
+    volumes:
+      - .:/app
     ports:
       - "5000:5000"
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
+      # FLASK_APP=${FLASK_APP:-app.py}
       # Variables para la conexión a MySQL
       - DATABASE_HOST=db
       - DATABASE_PORT=3306
